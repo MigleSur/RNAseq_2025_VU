@@ -6,6 +6,9 @@ samples = ["SRR15618897", "SRR15618896"]
 input_path = "/home/bda/migle/raw_data_exercise_20250220"
  
 genome_index_dir = "/home/bda/migle/raw_data_exercise_20250220/mouse_reference" 
+
+genes_bed = "data/annotation/genes.bed" # update the path
+
 stages = ["raw", "filtered"]
 
 # thread_no = 2
@@ -31,7 +34,7 @@ rule all:
 
 rule fastqc:
     input:
-        expand("{path}/{{sample}}_{{stage}}.fastq", path=input_path)
+        expand("{path}/{{sample}}_{{stage}}.fastq.gz", path=input_path)
     output:
         html = "results/fastqc/{sample}_{stage}_fastqc.html",
         zip  = "results/fastqc/{sample}_{stage}_fastqc.zip"
@@ -47,7 +50,7 @@ rule fastqc:
 
 rule fastp:
     input: 
-        expand("{path}/{{sample}}_raw.fastq", path=input_path)
+        expand("{path}/{{sample}}_raw.fastq.gz", path=input_path)
     output:
         filtered = expand("{path}/{{sample}}_filtered.fastq", path=input_path),
         html = "results/fastp/{sample}_fastp.html",
@@ -115,14 +118,14 @@ rule index_bam:
 rule rseqc_gene_body_coverage:
     input:
         sorted_bam="results/hisat2/{sample}.sorted.bam",
-        bed="data/annotation/genes.bed"  # Update path to your BED annotation file
+        bed=genes_bed 
     output:
         txt="results/rseqc/{sample}.geneBody_coverage.txt",
         pdf="results/rseqc/{sample}.geneBody_coverage.pdf"
     conda: "envs/preprocess_rnaseq.yaml"
     params:
         prefix="results/rseqc/{sample}.geneBody_coverage"
-    threads: 4
+    threads: 2
     shell:
         """
         geneBody_coverage.py -r {input.bed} -i {input.sorted_bam} -o {params.prefix}
@@ -133,3 +136,16 @@ rule rseqc_gene_body_coverage:
 # MULTIQC #
 ###########
 
+rule test_multiqc_file:
+    input:
+        expand("samtools_stats/{sample}.txt", sample=["a"]),
+    output:
+        "results/multiqc/multiqc.html",
+        "results/multiqc/multiqc.data.zip",
+    params:
+        extra="--verbose",  # Optional: extra parameters for multiqc.
+        use_input_files_only=True,  # Optional, use only a.txt and don't search folder samtools_stats for files
+    log:
+        "logs/multiqc.log",
+    wrapper:
+        "v5.8.0/bio/multiqc"
