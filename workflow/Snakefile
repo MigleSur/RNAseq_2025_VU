@@ -3,11 +3,9 @@ import os
 # List your sample names (without file extension)
 samples = ["SRR15618897", "SRR15618896"]
 
-input_path = "/home/bda/migle/raw_data_exercise_20250220"
+input_path = "/home/bda/raw_data_exercise_20250220"
  
-genome_index_dir = "/home/bda/migle/raw_data_exercise_20250220/mouse_reference/grcm38/genome" 
-
-genes_bed = "data/annotation/genes.bed" # update the path
+genome_index_dir = "/home/bda/raw_data_exercise_20250220/mouse_reference/grcm38/genome" 
 
 stages = ["raw", "filtered"]
 
@@ -35,7 +33,7 @@ rule all:
 
 rule fastqc:
     input:
-        expand("{path}/{{sample}}_{{stage}}.fastq.gz", path=input_path)
+        expand("{path}/{{sample}}_{{stage}}.fastq", path=input_path)
     output:
         html = "results/fastqc/{sample}_{stage}_fastqc.html",
         zip  = "results/fastqc/{sample}_{stage}_fastqc.zip"
@@ -51,7 +49,7 @@ rule fastqc:
 
 rule fastp:
     input: 
-        expand("{path}/{{sample}}_raw.fastq.gz", path=input_path)
+        expand("{path}/{{sample}}_raw.fastq", path=input_path)
     output:
         filtered = expand("{path}/{{sample}}_filtered.fastq", path=input_path),
         html = "results/fastp/{sample}_fastp.html",
@@ -87,7 +85,7 @@ rule hisat2:
     threads: 2
     shell:
         """
-        hisat2 -p {threads} -x {params.index} -U {input.fastq}  -S {output.bam} --new-summary --summary-file {output.summary}
+        hisat2 -p {threads} -x {params.index} -U {input.fastq}  -S {output.sam} --new-summary --summary-file {output.summary}
         samtools view -b -o {output.bam} {output.sam}
         """
 
